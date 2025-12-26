@@ -3,118 +3,94 @@
 <head>
 <meta charset="UTF-8">
 <title>Quản Lý Hụi</title>
-
 <style>
-body{
-  font-family:Arial;
-  background:#f2f2f2;
-  padding:10px;
-}
-h2{text-align:center}
-table{
-  width:100%;
-  border-collapse:collapse;
-  background:#fff;
-}
-th,td{
-  border:1px solid #333;
-  padding:6px;
-  text-align:center;
-}
-th{background:#ffe699}
-select,input{
-  padding:5px;
-}
-.green{color:green;font-weight:bold}
-.red{color:red;font-weight:bold}
+body{font-family:Arial;padding:20px}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid #333;padding:8px;text-align:center}
+th{background:#f2f2f2}
+button{padding:5px 10px}
+.daHot{color:red;font-weight:bold}
 </style>
 </head>
-
 <body>
 
-<h2>QUẢN LÝ HỤI THEO NGƯỜI</h2>
+<h2>QUẢN LÝ HỤI</h2>
+
 <button onclick="themNguoi()">➕ Thêm người</button>
-<p>
-Số người:
-<input type="number" id="soNguoi" value="20">
-&nbsp;&nbsp;
-Tiền hụi / tháng:
-<input type="number" id="tienHui" value="5000000">
-</p>
-
-<button onclick="taoDanhSach()">Tạo danh sách hụi</button>
-
-<br><br>
 
 <table>
 <thead>
 <tr>
-<th>STT</th>
-<th>Tên hụi viên</th>
-<th>Đã đóng</th>
-<th>Hốt</th>
+  <th>Tên người</th>
+  <th>Đã đóng</th>
+  <th>Hốt</th>
 </tr>
 </thead>
-<tbody id="ds"></tbody>
+<tbody id="bang"></tbody>
 </table>
 
-<br>
-
-<p>
-<b>Người hốt:</b> <span id="nguoiHot">---</span><br>
-<b>Tiền hốt:</b> <span id="tienHot" class="green">0</span>
-</p>
-
 <script>
-let danhSach = [];
+let danhSach = JSON.parse(localStorage.getItem("hui")) || [];
+
+function luu(){
+  localStorage.setItem("hui", JSON.stringify(danhSach));
+}
+
 function themNguoi(){
   danhSach.push({
     ten: "Người " + (danhSach.length + 1),
-    dong: true
+    daDong: false,
+    daHot: false
   });
+  luu();
   veBang();
 }
-function taoDanhSach(){
-  const soNguoi = Number(soNguoi.value);
-  danhSach = [];
-  for(let i=1;i<=soNguoi;i++){
-    danhSach.push({
-      ten: "Người " + i,
-      dong: true
-    });
+
+function tickDong(i){
+  danhSach[i].daDong = !danhSach[i].daDong;
+  luu();
+  veBang();
+}
+
+function hotHui(i){
+  if(danhSach[i].daHot){
+    alert("Người này đã hốt rồi!");
+    return;
   }
+  danhSach[i].daHot = true;
+  luu();
   veBang();
 }
 
 function veBang(){
-  let html="";
+  let html = "";
   danhSach.forEach((n,i)=>{
-    html+=`
+    html += `
     <tr>
-      <td>${i+1}</td>
       <td>
         <input value="${n.ten}"
-        oninput="danhSach[${i}].ten=this.value">
+        oninput="danhSach[${i}].ten=this.value;luu()">
       </td>
-      <td>✔</td>
+
       <td>
-        <button onclick="hot(${i})">Hốt</button>
+        <input type="checkbox"
+        ${n.daDong ? "checked" : ""}
+        onclick="tickDong(${i})">
+      </td>
+
+      <td>
+        ${n.daHot 
+          ? "<span class='daHot'>ĐÃ HỐT</span>"
+          : "<button onclick='hotHui("+i+")'>Hốt</button>"
+        }
       </td>
     </tr>`;
   });
-  ds.innerHTML = html;
+  document.getElementById("bang").innerHTML = html;
 }
 
-function hot(i){
-  const soNguoi = Number(document.getElementById("soNguoi").value);
-  const tien = Number(document.getElementById("tienHui").value);
-  const tong = soNguoi * tien;
-
-  nguoiHot.innerText = danhSach[i].ten;
-  tienHot.innerText = tong.toLocaleString();
-}
+veBang();
 </script>
 
 </body>
-
 </html>
