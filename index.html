@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <title>Quản Lý Hụi</title>
 
+<!-- ===== Thêm cho iOS: logo khi thêm vào màn hình chính ===== -->
+<link rel="apple-touch-icon" href="logo.png"> <!-- đường dẫn tới logo của bạn -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Quản Lý Hụi">
+
 <style>
 body{font-family:Arial;background:#f4f6f8;padding:20px}
 h2{color:#2c3e50;margin-bottom:3px}
@@ -202,9 +207,9 @@ function taoDienGiaiPDF(){
 ${data.danhSach.map(n=>{
   let ls = n.lichSu[ky];
   let trangThai = ls?.daHot ? "🔥 HỐT KỲ NÀY" : daChet(n) ? "☠ CHƯNG CHẾT" : "✔ CHƯNG SỐNG";
-  let mau = ls?.daHot ? "#d4edda"       // Kỳ này hốt → xanh nhạt
-             : daChet(n) ? "#f8d7da"    // Chưng chết → đỏ nhạt
-             : "#ffffff";               // Bình thường → trắng
+  let mau = ls?.daHot ? "#d4edda"
+             : daChet(n) ? "#f8d7da"
+             : "#ffffff";
   return `<tr style="background:${mau};color:#000">
     <td>${n.ten}</td>
     <td>${ls?.daDong?"✔":""}</td>
@@ -316,7 +321,3 @@ veBang();
 
 </body>
 </html>
-
-
-
-
