@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Quản Lý Hụi</title>
+
+<style>
+body{font-family:Arial;background:#f4f6f8;padding:20px}
+h2{color:#2c3e50;margin-bottom:3px}
+.sub{color:#555;margin-bottom:8px;font-style:italic}
+.chuHui{color:#c0392b;font-weight:bold;margin-bottom:10px}
+.info{background:#fff;padding:10px;border-radius:6px;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;background:#fff}
+th,td{border:1px solid #ccc;padding:8px;text-align:center}
+th{background:#3498db;color:#fff}
+tr.daDong{background:#e8f8f5}
+tr.chuaDong{background:#fdecea}
+button{padding:6px 10px;border:none;border-radius:4px;cursor:pointer}
+.them{background:#27ae60;color:#fff}
+.hot{background:#f39c12;color:#fff}
+.xoa{
+  background:linear-gradient(135deg,#ff4d4d,#c0392b);
+  color:#fff;
+  font-weight:bold;
+  box-shadow:0 3px 6px rgba(0,0,0,.25)
+}
+.ky{background:#8e44ad;color:#fff}
+.daHot{color:red;font-weight:bold}
+.khoa{color:#999;font-style:italic}
+.tongHot{margin-top:10px;font-size:16px;font-weight:bold}
+.song{color:#27ae60;font-weight:bold}
+.chet{color:#7f8c8d;font-weight:bold}
+.hotNguoi{color:#e74c3c;font-weight:bold}
+
+</style>
+</head>
+
+<body>
+
+<h2>📋 QUẢN LÝ HỤI</h2>
+<div class="sub">Hụi 5.000.000 đ / 1 tháng</div>
+<div class="chuHui">Chủ hụi: Nguyễn Hằng Ni</div>
+
+<div class="info">
+<b>Kỳ:</b>
+<button class="ky" onclick="doiKy(-1)">⬅</button>
+<input type="number" id="ky" value="1" onchange="capNhatKy()">
+<button class="ky" onclick="doiKy(1)">➡</button>
+&nbsp;&nbsp;
+<b>Ngày khui:</b>
+<input type="date" id="ngayKhui" onchange="capNhatNgay()">
+</div>
+
+<button class="them" onclick="themNguoi()" id="btnThem">➕ Thêm người</button>
+<button class="ky" onclick="xuatPDF()">📤 Xuất PDF gửi Zalo</button>
+<button class="xoa" onclick="resetHui()" id="btnReset">♻ Reset dây hụi</button>
+
+<table>
+<thead>
+<tr>
+<th>Tên</th>
+<th>Đã đóng</th>
+<th>Tiền đóng</th>
+<th>Bỏ thăm</th>
+<th>Hốt</th>
+<th>Xoá</th>
+</tr>
+</thead>
+<tbody id="bang"></tbody>
+</table>
+
+<div class="tongHot" id="tongHot"></div>
+
+<script>
+const TIEN_HUI = 5000000;
+let laChuHui = true; // ❗ đổi false khi gửi cho người khác
+
+let data = {
+  ky:1,
+  ngay:{},
+  tongHot:{},
+  danhSach:[]
+};
+
+function luuDuLieu(){
+  localStorage.setItem("huiData",JSON.stringify(data));
+}
+function taiDuLieu(){
+  let d=localStorage.getItem("huiData");
+  if(d) data=JSON.parse(d);
+}
+
+function capNhatKy(){
+  if(!laChuHui) return;
+  let v=parseInt(ky.value); if(v<1) v=1;
+  data.ky=v; luuDuLieu(); veBang();
+}
+function doiKy(s){
+  if(!laChuHui) return;
+  data.ky+=s; if(data.ky<1) data.ky=1;
+  ky.value=data.ky; luuDuLieu(); veBang();
+}
+function capNhatNgay(){
+  if(!laChuHui) return;
+  data.ngay[data.ky]=ngayKhui.value; luuDuLieu();
+}
+
+function themNguoi(){
+  if(!laChuHui) return;
+  data.danhSach.push({ten:"Người "+(data.danhSach.length+1),lichSu:{}});
+  luuDuLieu(); veBang();
+}
+
+function xoaNguoi(i){
+  if(!laChuHui) return;
+  if(daChet(data.danhSach[i])) return alert("Chưng chết không được xoá");
+  if(confirm("Xoá người này?")){
+    data.danhSach.splice(i,1);
+    luuDuLieu(); veBang();
+  }
+}
+
+function daChet(n){
+  for(let k in n.lichSu) if(n.lichSu[k].daHot) return true;
+  return false;
+}
+
+function tickDong(i){
+  if(!laChuHui) return;
+  let ls=data.danhSach[i].lichSu[data.ky];
+  if(ls){ ls.daDong=!ls.daDong; luuDuLieu(); veBang(); }
+}
+
+function hotHui(i){
+  if(!laChuHui) return;
+  let ky=data.ky;
+  let bo=parseInt(prompt("Nhập tiền bỏ thăm:"));
+  if(isNaN(bo)||bo<0) return;
+
+  data.danhSach.forEach(n=>{
+    if(!n.lichSu[ky]) n.lichSu[ky]={dong:TIEN_HUI,daDong:false,daHot:false,boTham:0};
+  });
+
+  data.danhSach[i].lichSu[ky].daHot=true;
+  data.danhSach[i].lichSu[ky].dong=0;
+  data.danhSach[i].lichSu[ky].boTham=bo;
+
+  let tong=0;
+  data.danhSach.forEach((n,idx)=>{
+    if(idx!==i){
+      if(!daChet(n)){
+        n.lichSu[ky].dong=TIEN_HUI-bo;
+      }else{
+        n.lichSu[ky].dong=TIEN_HUI;
+      }
+      tong+=n.lichSu[ky].dong;
+    }
+  });
+
+  data.tongHot[ky]=tong;
+  alert("💰 Hốt được "+tong.toLocaleString()+" đ");
+  luuDuLieu(); veBang();
+}
+
+function veBang(){
+  ky.value=data.ky;
+  ngayKhui.value=data.ngay[data.ky]||"";
+  let html="";
+  data.danhSach.forEach((n,i)=>{
+    let ls=n.lichSu[data.ky];
+    html+=`
+    <tr>
+    <td><input value="${n.ten}" ${!laChuHui?"disabled":""}
+    oninput="data.danhSach[${i}].ten=this.value;luuDuLieu()"></td>
+    <td>${ls&&laChuHui?`<input type="checkbox" ${ls.daDong?"checked":""} onclick="tickDong(${i})">`:ls?.daDong?"✔":""}</td>
+    <td>${ls?ls.dong.toLocaleString()+" đ":""}</td>
+    <td>${ls?.boTham?ls.boTham.toLocaleString()+" đ":""}</td>
+    <td>
+${
+  ls?.daHot
+    ? `<span class="hotNguoi">🔥 ĐÃ HỐT</span>`
+    : daChet(n)
+      ? `<span class="chet">☠ CHƯNG CHẾT</span>`
+      : `<span class="song">✔ CHƯNG SỐNG</span>`
+}
+${laChuHui && !ls?.daHot && !daChet(n)
+  ? `<br><button class="hot" onclick="hotHui(${i})">Hốt</button>`
+  : ""}
+</td>
+
+    <td>${laChuHui?`<button class="xoa" onclick="xoaNguoi(${i})">❌</button>`:""}</td>
+    </tr>`;
+  });
+  bang.innerHTML=html;
+  tongHot.innerHTML=data.tongHot[data.ky]?
+  "💰 Tổng tiền người hốt nhận: <b>"+data.tongHot[data.ky].toLocaleString()+" đ</b>":"";
+}
+
+function xuatPDF(){
+  let w = window.open();
+
+  w.document.write(`
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Bill Hụi</title>
+
+<style>
+${document.querySelector("style").innerHTML}
+/* ===== STYLE RIÊNG KHI XUẤT PDF TRÊN ĐIỆN THOẠI ===== */
+
+body{
+  font-size:18px;        /* ⭐ chữ tổng thể to hơn */
+}
+
+h2{
+  font-size:26px;
+}
+
+.sub{
+  font-size:18px;
+}
+
+.chuHui{
+  font-size:19px;
+}
+
+table{
+  font-size:18px;
+}
+
+th, td{
+  font-size:18px;
+}
+
+/* ❌ ẨN CỘT XOÁ */
+table th:last-child,
+table td:last-child{
+  display:none !important;
+}
+
+/* ❌ ẨN NÚT BẤM */
+button{
+  display:none !important;
+}
+
+/* ===== STYLE RIÊNG CHO PDF (KHÔNG ẢNH HƯỞNG GIAO DIỆN) ===== */
+
+body{
+  font-size:16px;
+  background:#fff;
+}
+
+h2{ font-size:22px; }
+.sub{ font-size:15px; }
+.chuHui{ font-size:16px; }
+
+table{ font-size:15px; }
+
+th{
+  background:#2980b9 !important;
+  color:#fff !important;
+}
+
+tr.daDong{
+  background:#d5f5e3 !important;
+}
+
+tr.chuaDong{
+  background:#fdebd0 !important;
+}
+
+/* ❌ ẨN CỘT XOÁ */
+table th:last-child,
+table td:last-child{
+  display:none !important;
+}
+
+/* ❌ ẨN TOÀN BỘ NÚT */
+button{
+  display:none !important;
+}
+
+@media print{
+  body{
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+}
+</style>
+</head>
+
+<body>
+${document.body.innerHTML}
+</body>
+</html>
+  `);
+
+  w.document.close();
+  w.focus();
+}
+
+taiDuLieu();
+veBang();
+
+if(!laChuHui){
+  btnThem.style.display="none";
+}
+function resetHui(){
+  if(!laChuHui) return;
+
+  if(!confirm("⚠️ Reset sẽ xoá TOÀN BỘ dây hụi. Bạn chắc chưa?")) return;
+
+  data = {
+    ky: 1,
+    ngay: {},
+    tongHot: {},
+    danhSach: []
+  };
+
+  localStorage.removeItem("huiData");
+  veBang();
+}
+if(!laChuHui){
+  btnThem.style.display="none";
+  btnReset.style.display="none";
+}
+</script>
+
+</body>
+</html>
+
