@@ -34,8 +34,9 @@ button{padding:6px 10px;border:none;border-radius:4px;cursor:pointer}
 <body>
 
 <h2>📋 QUẢN LÝ HỤI</h2>
-<div class="sub">Hụi 20.000.000 đ / 1 tháng</div>
+<div class="sub">Hụi 20.000.000 đ / 1 tháng ( Dây 1 )</div>
 <div class="chuHui">Chủ hụi: Nguyễn Hằng Ni</div>
+
 
 <div class="info">
 <b>Kỳ:</b>
@@ -44,8 +45,13 @@ button{padding:6px 10px;border:none;border-radius:4px;cursor:pointer}
 <button class="ky" onclick="doiKy(1)">➡</button>
 &nbsp;&nbsp;
 <b>Ngày khui:</b>
-<input type="date" id="ngayKhui" onchange="capNhatNgay()">
+<input type="date" id="ngayKhui" onchange="capNhatNgayKhui()">
+<br><br>
+<b>Ngày giao:</b>
+<input type="date" id="ngaygiao" onchange="capNhatNgayGiao()">
 </div>
+
+
 
 <button class="them" onclick="themNguoi()" id="btnThem">➕ Thêm người</button>
 <button class="ky" onclick="xuatPDF()">📤 Xuất PDF gửi Zalo</button>
@@ -54,11 +60,12 @@ button{padding:6px 10px;border:none;border-radius:4px;cursor:pointer}
 <table>
 <thead>
 <tr>
-<th>Tên</th>
+
 <th>Đã đóng</th>
 <th>Tiền đóng</th>
 <th>Bỏ thăm</th>
 <th>Hốt</th>
+<th>Tên</th><th>Hình thức</th> <!-- ✅ THÊM -->
 <th>Xoá</th>
 </tr>
 </thead>
@@ -72,7 +79,8 @@ const TIEN_HUI = 20000000;
 
 let data = {
   ky:1,
-  ngay:{},
+  ngayKhui:{},
+  ngayGiao:{},
   tongHot:{},
   danhSach:[]
 };
@@ -93,9 +101,17 @@ function doiKy(s){
   data.ky+=s; if(data.ky<1) data.ky=1;
   ky.value=data.ky; luuDuLieu(); veBang();
 }
-function capNhatNgay(){
-  data.ngay[data.ky]=ngayKhui.value; luuDuLieu();
+
+function capNhatNgayKhui(){
+  data.ngayKhui[data.ky] = ngayKhui.value;
+  luuDuLieu();
 }
+
+function capNhatNgayGiao(){
+  data.ngayGiao[data.ky] = ngaygiao.value;
+  luuDuLieu();
+}
+
 
 function themNguoi(){
   data.danhSach.push({ten:"Người "+(data.danhSach.length+1),lichSu:{}});
@@ -124,7 +140,8 @@ function hotHui(i){
 
   data.danhSach.forEach(n=>{
     if(!n.lichSu[ky])
-      n.lichSu[ky]={dong:TIEN_HUI,daDong:false,daHot:false,boTham:0};
+      n.lichSu[ky]={dong:TIEN_HUI,daDong:false,daHot:false,boTham:0,hinhThuc:""};
+
   });
 
   data.danhSach[i].lichSu[ky].daHot=true;
@@ -147,7 +164,8 @@ function hotHui(i){
 
 function veBang(){
   ky.value=data.ky;
-  ngayKhui.value=data.ngay[data.ky]||"";
+  ngayKhui.value = data.ngayKhui[data.ky] || "";
+ngaygiao.value = data.ngayGiao[data.ky] || "";
   let html="";
   data.danhSach.forEach((n,i)=>{
     let ls=n.lichSu[data.ky];
@@ -172,7 +190,23 @@ function veBang(){
 <td>${ls?.boTham?ls.boTham.toLocaleString()+" đ":""}</td>
 <td>
 ${ls?.daHot?"🔥 ĐÃ HỐT":daChet(n)?"☠ CHƯNG CHẾT":"✔ CHƯNG SỐNG"}
-${!ls?.daHot && !daChet(n)?`<br><button class="hot" onclick="hotHui(${i})">Hốt</button>`:""}</td>
+${!ls?.daHot && !daChet(n)?`<br><button class="hot" onclick="hotHui(${i})">Hốt</button>`:""}
+</td>
+
+<!-- ✅ CỘT HÌNH THỨC -->
+<td>
+<select onchange="
+if(!data.danhSach[${i}].lichSu[data.ky])
+  data.danhSach[${i}].lichSu[data.ky]={dong:TIEN_HUI,daDong:false,daHot:false,boTham:0,hinhThuc:''};
+data.danhSach[${i}].lichSu[data.ky].hinhThuc=this.value;
+luuDuLieu()
+" style="font-size:16px;padding:4px">
+  <option value="">➖ Chọn</option>
+  <option value="CK" ${ls?.hinhThuc==="CK"?"selected":""}>🏦 CK</option>
+  <option value="TM" ${ls?.hinhThuc==="TM"?"selected":""}>💵 Tiền mặt</option>
+</select>
+</td>
+
 <td><button class="xoa" onclick="data.danhSach.splice(${i},1);luuDuLieu();veBang()">❌</button></td>
 </tr>`; 
   });
@@ -200,7 +234,6 @@ function taoDienGiaiPDF(){
 <th>Tên</th>
 <th>Đã đóng</th>
 <th>Tiền đóng</th>
-<th>Bỏ thăm</th>
 <th>Trạng thái</th>
 </tr>
 </thead>
@@ -215,7 +248,6 @@ ${data.danhSach.map(n=>{
     <td>${n.ten}</td>
     <td>${ls?.daDong?"✔":""}</td>
     <td>${ls?ls.dong.toLocaleString()+" đ":""}</td>
-    <td>${ls?.boTham?ls.boTham.toLocaleString()+" đ":""}</td>
     <td>${trangThai}</td>
   </tr>`;
 }).join("")}
@@ -235,7 +267,9 @@ ${data.danhSach.map(n=>{
 
   return `
 <div style="margin-top:20px;padding:15px;border:2px dashed #444;font-size:18px;line-height:1.6">
-<b>📌 THÔNG TIN HỐT HỤI Dây 1 – KỲ ${ky}</b><br><br>
+<b>📌 THÔNG TIN HỐT HỤI DÂY 1 – KỲ ${ky}</b><br>
+🗓 Ngày khui: <b>${data.ngayKhui[ky] || "—"}</b><br>
+📦 Ngày giao: <b>${data.ngayGiao[ky] || "—"}</b><br><br>
 ${bangNguoi}
 <div style="margin-top:10px;font-weight:bold;color:#000">
 Người hốt: ${tenNguoiHot}<br>
@@ -284,7 +318,7 @@ function xuatPDF(){
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Phiếu giao hụi</title>
+<title>Phiếu Giao Hụi</title>
 <style>
 body{font-family:Arial;font-size:18px}
 button,input{display:none}
@@ -340,7 +374,14 @@ ${thongTinChuHuiQR()}
 
 function resetHui(){
   if(!confirm("Reset toàn bộ dây hụi?")) return;
-  data={ky:1,ngay:{},tongHot:{},danhSach:[]};
+  data={
+  ky:1,
+  ngayKhui:{},
+  ngayGiao:{},
+  tongHot:{},
+  danhSach:[]
+};
+
   localStorage.removeItem("huiData");
   veBang();
 }
@@ -351,6 +392,5 @@ veBang();
 
 </body>
 </html>
-
 
 
